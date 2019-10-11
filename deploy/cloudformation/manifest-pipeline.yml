@@ -509,7 +509,7 @@ Resources:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
-      Timeout: 600
+      Timeout: 900
       MemorySize: 512
       CodeUri: finalize/
       Environment:
