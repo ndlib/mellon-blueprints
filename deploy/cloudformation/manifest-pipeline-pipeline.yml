@@ -1,4 +1,4 @@
-3.8AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: "2010-09-09"
 Description: >
   - Creates a CodeBuild Project to pull the manifest pipeline GitHub repository,
   build the lambdas and StepFunctions and package them for deployment.
