@@ -29,7 +29,7 @@ class BuildProject():
         return {
             'install': {
                 'runtime-versions': {
-                    'python': 3.7,
+                    'python': 3.8,
                 },
                 'commands': [
                     'echo "Ensure that the codebuild directory is executable"',

@@ -392,7 +392,7 @@ Resources:
                 - "s3:ListBucket"
               Resource:
                 - !GetAtt ProcessBucket.Arn
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 90
       CodeUri: init/
       Environment:
@@ -425,7 +425,7 @@ Resources:
               Resource:
                 - !GetAtt ProcessBucket.Arn
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       CodeUri: process_manifest/
       Environment:
@@ -470,7 +470,7 @@ Resources:
               Action:
                 - "ses:SendEmail"
               Resource: "*"
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       MemorySize: 512
       CodeUri: finalize/
@@ -820,7 +820,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       CodeUri: harvest_eads/
       Policies:
@@ -867,7 +867,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       CodeUri: museum_export/
       Policies:
@@ -906,7 +906,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       CodeUri: aleph_export/
       Policies:
