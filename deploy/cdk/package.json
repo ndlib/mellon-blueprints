@@ -1,9 +1,14 @@
 {
-  "name": "base",
+  "name": "@ndlib/marble-blueprints",
   "version": "0.1.0",
   "bin": {
     "base": "bin/base.js"
   },
+  "files": [
+    "lib/**/*"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
