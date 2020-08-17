@@ -1,17 +1,17 @@
-import { CloudFormationCapabilities } from '@aws-cdk/aws-cloudformation';
-import { BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild';
-import codepipeline = require('@aws-cdk/aws-codepipeline');
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
-import { PolicyStatement } from '@aws-cdk/aws-iam';
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
-import ssm = require('@aws-cdk/aws-ssm');
-import cdk = require('@aws-cdk/core');
-import { Runtime } from '@aws-cdk/aws-lambda';
-import { Fn } from '@aws-cdk/core';
-import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
-import { Topic } from '@aws-cdk/aws-sns';
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
-import { FoundationStack } from '../foundation';
+import { CloudFormationCapabilities } from '@aws-cdk/aws-cloudformation'
+import { BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
+import codepipeline = require('@aws-cdk/aws-codepipeline')
+import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
+import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
+import ssm = require('@aws-cdk/aws-ssm')
+import cdk = require('@aws-cdk/core')
+import { Runtime } from '@aws-cdk/aws-lambda'
+import { Fn } from '@aws-cdk/core'
+import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
+import { Topic } from '@aws-cdk/aws-sns'
+import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
+import { FoundationStack } from '../foundation'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
@@ -29,29 +29,29 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly foundationStack: FoundationStack;
   readonly hostnamePrefix: string;
   readonly createDns: boolean;
-};
+}
 
 export class DeploymentPipelineStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
-    super(scope, id, props);
+    super(scope, id, props)
 
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
-    const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`;
-    const resolvedDomain = props.foundationStack.hostedZone.zoneName;
-    const testHost = `${props.hostnamePrefix}-test.${resolvedDomain}`;
-    const testStackName = `${props.namespace}-image-service-test`;
-    const testCDNStackName = `${props.namespace}-image-service-cdn-test`;
-    const prodHost = `${props.hostnamePrefix}.${resolvedDomain}`;
-    const prodStackName = `${props.namespace}-image-service-prod`;
-    const prodCDNStackName = `${props.namespace}-image-service-cdn-prod`;
+    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
+    const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`
+    const resolvedDomain = props.foundationStack.hostedZone.zoneName
+    const testHost = `${props.hostnamePrefix}-test.${resolvedDomain}`
+    const testStackName = `${props.namespace}-image-service-test`
+    const testCDNStackName = `${props.namespace}-image-service-cdn-test`
+    const prodHost = `${props.hostnamePrefix}.${resolvedDomain}`
+    const prodStackName = `${props.namespace}-image-service-prod`
+    const prodCDNStackName = `${props.namespace}-image-service-cdn-prod`
 
     const artifactBucket = new Bucket(this, 'artifactBucket', {
       encryption: BucketEncryption.KMS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
+    })
 
     // Source Actions
-    const appSourceArtifact = new codepipeline.Artifact('AppCode');
+    const appSourceArtifact = new codepipeline.Artifact('AppCode')
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
         branch: props.appSourceBranch,
@@ -59,8 +59,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
-    });
-    const qaSourceArtifact = new codepipeline.Artifact('QACode');
+    })
+    const qaSourceArtifact = new codepipeline.Artifact('QACode')
     const qaSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'QACode',
         branch: props.qaSourceBranch,
@@ -68,8 +68,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: qaSourceArtifact,
         owner: props.qaRepoOwner,
         repo: props.qaRepoName,
-    });
-    const infraSourceArtifact = new codepipeline.Artifact('InfraCode');
+    })
+    const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
         branch: props.infraSourceBranch,
@@ -77,9 +77,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
-    });
+    })
 
-    const builtCodeArtifact = new codepipeline.Artifact('BuiltCode');
+    const builtCodeArtifact = new codepipeline.Artifact('BuiltCode')
     const build = new PipelineProject(this, 'IIIFServerlessBuild', {
       environment: {
         buildImage: LinuxBuildImage.fromDockerRegistry('lambci/lambda:build-nodejs12.x'),
@@ -100,31 +100,31 @@ export class DeploymentPipelineStack extends cdk.Stack {
                 --s3-bucket ${artifactBucket.bucketName} \
                 --s3-prefix 'CloudformationPackages' \
                 --output-template-file package_output.yml`,
-            ]
+            ],
           },
         },
         version: '0.2',
         artifacts: {
-          files: ['package_output.yml']
-        }
+          files: ['package_output.yml'],
+        },
       }),
-    });
+    })
     build.addToRolePolicy(new PolicyStatement({
       actions: [
         's3:ListBucket',
         's3:GetObject',
         's3:PutObject',
       ],
-      resources: [artifactBucket.bucketArn]
-    }));
+      resources: [artifactBucket.bucketArn],
+    }))
     const buildAction = new codepipelineActions.CodeBuildAction({
       actionName: 'Build',
       input: appSourceArtifact,
       outputs: [builtCodeArtifact],
       project: build,
-    });
+    })
 
-    const builtTemplatePath = new codepipeline.ArtifactPath(builtCodeArtifact, 'package_output.yml');
+    const builtTemplatePath = new codepipeline.ArtifactPath(builtCodeArtifact, 'package_output.yml')
     const deployTestAction = new codepipelineActions.CloudFormationCreateUpdateStackAction({
       actionName: 'DeployAPI',
       templatePath: builtTemplatePath,
@@ -132,15 +132,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
       adminPermissions: false,
       parameterOverrides: {
         SourceBucket: props.foundationStack.publicBucket.bucketName,
-        IiifLambdaTimeout: '20'
+        IiifLambdaTimeout: '20',
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
         CloudFormationCapabilities.ANONYMOUS_IAM,
       ],
       runOrder: 1,
-    });
-    const cdnTemplatePath = new codepipeline.ArtifactPath(infraSourceArtifact, 'deploy/cloudformation/iiif-serverless-cdn.yml');
+    })
+    const cdnTemplatePath = new codepipeline.ArtifactPath(infraSourceArtifact, 'deploy/cloudformation/iiif-serverless-cdn.yml')
     const deployTestCDNAction = new codepipelineActions.CloudFormationCreateUpdateStackAction({
       actionName: 'DeployCDN',
       templatePath: cdnTemplatePath,
@@ -158,7 +158,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         CloudFormationCapabilities.ANONYMOUS_IAM,
       ],
       runOrder: 2,
-    });
+    })
 
     const smokeTestsProject = new PipelineProject(this, 'IIIFServerlessSmokeTests', {
       buildSpec: BuildSpec.fromObject({
@@ -179,22 +179,22 @@ export class DeploymentPipelineStack extends cdk.Stack {
       environment: {
         buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
       },
-    });
+    })
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
       input: qaSourceArtifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
-    });
+    })
 
     // Approval
-    const approvalTopic = new Topic(this, 'ApprovalTopic');
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
     const approvalAction = new ManualApprovalAction({
       actionName: 'Approval',
       additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to https://${prodHost}.\n\n*Application Changes:*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.\n\n*Infrastructure Changes:*\n${infraSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${infraRepoUrl}/commit/${infraSourceAction.variables.commitId}.`,
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
-    });
+    })
 
     const deployProdAction = new codepipelineActions.CloudFormationCreateUpdateStackAction({
       actionName: 'DeployAPI',
@@ -203,14 +203,14 @@ export class DeploymentPipelineStack extends cdk.Stack {
       adminPermissions: false,
       parameterOverrides: {
         SourceBucket: props.foundationStack.publicBucket.bucketName,
-        IiifLambdaTimeout: '20'
+        IiifLambdaTimeout: '20',
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
         CloudFormationCapabilities.ANONYMOUS_IAM,
       ],
       runOrder: 1,
-    });
+    })
     const deployProdCDNAction = new codepipelineActions.CloudFormationCreateUpdateStackAction({
       actionName: 'DeployCDN',
       templatePath: cdnTemplatePath,
@@ -228,7 +228,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         CloudFormationCapabilities.ANONYMOUS_IAM,
       ],
       runOrder: 2,
-    });
+    })
 
     const smokeTestsProdProject = new PipelineProject(this, 'IIIFServerlessSmokeTestsProd', {
       buildSpec: BuildSpec.fromObject({
@@ -249,13 +249,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
       environment: {
         buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
       },
-    });
+    })
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
       input: qaSourceArtifact,
       project: smokeTestsProdProject,
       actionName: 'SmokeTests',
       runOrder: 98,
-    });
+    })
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
@@ -276,9 +276,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
         {
           actions: [deployProdAction, deployProdCDNAction, smokeTestsProdAction],
           stageName: 'Production',
-        }
+        },
       ],
-    });
+    })
 
     deployTestAction.addToDeploymentRolePolicy(new PolicyStatement({
       actions: [
@@ -287,18 +287,18 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
       resources: [
         artifactBucket.bucketArn,
-        `${artifactBucket.bucketArn}/*`
-      ]
-    }));
+        `${artifactBucket.bucketArn}/*`,
+      ],
+    }))
 
-    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.transform());
-    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.iamRole(testStackName));
-    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.lambda(testStackName));
-    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.api());
+    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.transform())
+    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.iamRole(testStackName))
+    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.lambda(testStackName))
+    deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.api())
 
-    deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.ssm(testCDNStackName));
-    deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.apiDomain(testHost));
-    deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudfront, GlobalActions.Route53]));
+    deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.ssm(testCDNStackName))
+    deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.apiDomain(testHost))
+    deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudfront, GlobalActions.Route53]))
 
     deployProdAction.addToDeploymentRolePolicy(new PolicyStatement({
       actions: [
@@ -307,23 +307,23 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
       resources: [
         artifactBucket.bucketArn,
-        `${artifactBucket.bucketArn}/*`
-      ]
-    }));
+        `${artifactBucket.bucketArn}/*`,
+      ],
+    }))
 
-    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.transform());
-    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.iamRole(prodStackName));
-    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.lambda(prodStackName));
-    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.api());
+    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.transform())
+    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.iamRole(prodStackName))
+    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.lambda(prodStackName))
+    deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.api())
 
-    deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.ssm(prodCDNStackName));
-    deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.apiDomain(prodHost));
-    deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudfront, GlobalActions.Route53]));
+    deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.ssm(prodCDNStackName))
+    deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.apiDomain(prodHost))
+    deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudfront, GlobalActions.Route53]))
 
     if(props.createDns){
-      const hostedZone = props.foundationStack.hostedZone.hostedZoneId;
-      deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
-      deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
+      const hostedZone = props.foundationStack.hostedZone.hostedZoneId
+      deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone))
+      deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone))
     }
   }
 }

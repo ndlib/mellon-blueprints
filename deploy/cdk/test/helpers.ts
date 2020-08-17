@@ -1,11 +1,11 @@
-import { Vpc } from "@aws-cdk/aws-ec2";
-import cxapi = require('@aws-cdk/cx-api');
-import { HostedZone } from "@aws-cdk/aws-route53";
+import { Vpc } from "@aws-cdk/aws-ec2"
+import cxapi = require('@aws-cdk/cx-api')
+import { HostedZone } from "@aws-cdk/aws-route53"
 
 export const mockVpcFromLookup = (response?: any) => {
-  jest.mock('@aws-cdk/aws-ec2');
-  const mockFromLookup = jest.spyOn(Vpc, 'fromLookup');
-  mockFromLookup.mockImplementation((scope, id, options) => { 
+  jest.mock('@aws-cdk/aws-ec2')
+  const mockFromLookup = jest.spyOn(Vpc, 'fromLookup')
+  mockFromLookup.mockImplementation((scope, id, options) => {
     return response ?? {
       vpcId: options.vpcId ?? 'vpc-1234',
       publicSubnets: [
@@ -42,18 +42,18 @@ export const mockVpcFromLookup = (response?: any) => {
           routeTable: { routeTableId: 'rt-123' },
         },
       ],
-    };
-  });
+    }
+  })
 }
 
 
 export const mockHostedZoneFromLookup = (response?: any) => {
-  jest.mock('@aws-cdk/aws-route53');
-  const mockFromLookup = jest.spyOn(HostedZone, 'fromLookup');
-  mockFromLookup.mockImplementation((scope, id, query) => { 
+  jest.mock('@aws-cdk/aws-route53')
+  const mockFromLookup = jest.spyOn(HostedZone, 'fromLookup')
+  mockFromLookup.mockImplementation((scope, id, query) => {
     return response ?? {
       hostedZoneId: 'mockHostedZone-id',
       zoneName: 'mockHostedZone-name',
-    };
-  });
+    }
+  })
 }

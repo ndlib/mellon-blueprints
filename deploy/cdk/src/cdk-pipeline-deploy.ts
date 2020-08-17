@@ -1,8 +1,8 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild';
-import { Artifact } from '@aws-cdk/aws-codepipeline';
-import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions';
-import { PolicyStatement } from '@aws-cdk/aws-iam';
-import { Construct, Fn } from '@aws-cdk/core';
+import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
+import { Artifact } from '@aws-cdk/aws-codepipeline'
+import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
+import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { Construct, Fn } from '@aws-cdk/core'
 
 export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   /**
@@ -27,9 +27,9 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    */
   readonly appSourceArtifact: Artifact;
 
-  /** 
+  /**
    * Subdirectory of the infrastructure source where the cdk code can be found, without leading /
-   * The action created will use infra source as primary input, so this should be a subdir of the 
+   * The action created will use infra source as primary input, so this should be a subdir of the
    * CODEBUILD_SRC_DIR environment variable
    */
   readonly cdkDirectory?: string;
@@ -49,7 +49,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly postDeployCommands?: string[];
   readonly outputFiles?: string[];
   readonly outputArtifacts?: Artifact[];
-};
+}
 
 /**
  * Convenience class for creating a PipelineProject and Action that will use cdk to deploy
@@ -57,26 +57,26 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
  * permissions for cdk to make changes to the target stacks involved.
  */
 export class CDKPipelineDeploy extends Construct {
-  public readonly project: PipelineProject;
-  public readonly action: CodeBuildAction;
+  public readonly project: PipelineProject
+  public readonly action: CodeBuildAction
 
   constructor(scope: Construct, id: string, props: ICDKPipelineDeployProps) {
-    super(scope, id);
+    super(scope, id)
 
-    let addtlContext = '';
+    let addtlContext = ''
     if(props.additionalContext !== undefined){
       Object.entries(props.additionalContext).forEach((val) => {
-        addtlContext += ` -c "${val[0]}=${val[1]}"`;
-      });
+        addtlContext += ` -c "${val[0]}=${val[1]}"`
+      })
     }
     this.project = new PipelineProject(scope, `${id}Project`, {
-      environment: {	
+      environment: {
         buildImage: LinuxBuildImage.STANDARD_4_0,
         privileged: true,
       },
       buildSpec: BuildSpec.fromObject({
         artifacts: {
-          files: props.outputFiles || []
+          files: props.outputFiles || [],
         },
         phases: {
           install: {
@@ -91,16 +91,16 @@ export class CDKPipelineDeploy extends Construct {
           pre_build: {
             commands: [
               `cd $CODEBUILD_SRC_DIR_${props.appSourceArtifact.artifactName}`,
-              ...(props.appBuildCommands || [])
-            ]
+              ...(props.appBuildCommands || []),
+            ],
           },
           build: {
             commands: [
-              `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`, 
+              `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
               `npm run cdk deploy -- ${props.targetStack} \
                 --require-approval never --exclusively \
-                -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`
-            ]
+                -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`,
+            ],
           },
           post_build: {
             commands: props.postDeployCommands || [],
@@ -108,14 +108,14 @@ export class CDKPipelineDeploy extends Construct {
         },
         version: '0.2',
       }),
-    });
+    })
 
     // CDK will try to read logs when generating output for failed events
     this.project.addToRolePolicy(new PolicyStatement({
       actions: [ 'logs:DescribeLogGroups'],
       resources: [ '*' ],
-    }));
-    
+    }))
+
     // Anytime cdk deploys a stack without --exclusively, it will try to also update the stacks it depends on.
     // So, we need to give the pipeline permissions to update the target stack and the stacks it depends on.
     this.project.addToRolePolicy(new PolicyStatement({
@@ -130,13 +130,13 @@ export class CDKPipelineDeploy extends Construct {
         'cloudformation:GetTemplate',
       ],
       resources: [props.targetStack, ...props.dependsOnStacks].map(s => Fn.sub('arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/' + s + '/*')),
-    }));
+    }))
 
     // Add permissions to read CDK bootstrap stack/bucket
     this.project.addToRolePolicy(new PolicyStatement({
       actions: ['cloudformation:DescribeStacks'],
       resources: [ Fn.sub('arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/CDKToolkit/*') ],
-    }));
+    }))
     this.project.addToRolePolicy(new PolicyStatement({
       // TODO: Is there a way to get the bucket name?
       actions: [
@@ -148,7 +148,7 @@ export class CDKPipelineDeploy extends Construct {
         's3:GetBucketPolicy',
       ],
       resources: [ 'arn:aws:s3:::cdktoolkit-stagingbucket-*' ],
-    }));
+    }))
 
     this.action = new CodeBuildAction({
       actionName: 'Deploy',
@@ -157,6 +157,6 @@ export class CDKPipelineDeploy extends Construct {
       project: this.project,
       runOrder: 1,
       outputs: props.outputArtifacts || [],
-    });
+    })
   }
-};
+}

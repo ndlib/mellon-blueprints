@@ -1,5 +1,5 @@
-import { PolicyStatement } from '@aws-cdk/aws-iam';
-import { Fn, Stack } from '@aws-cdk/core';
+import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { Fn, Stack } from '@aws-cdk/core'
 
 export enum GlobalActions {
   None,
@@ -16,9 +16,9 @@ export enum GlobalActions {
 export class NamespacedPolicy {
   // For actions that only support '*', ie cannot be namespaced
   public static globals(actionOptions: GlobalActions[]): PolicyStatement {
-    let actions : string[] = [];
+    let actions: string[] = []
     if(actionOptions.includes(GlobalActions.S3)){
-      actions.push('s3:CreateBucket');
+      actions.push('s3:CreateBucket')
     }
     if(actionOptions.includes(GlobalActions.Cloudfront)){
       actions = [...actions,
@@ -32,16 +32,16 @@ export class NamespacedPolicy {
         'cloudfront:GetCloudFrontOriginAccessIdentityConfig',
         'cloudfront:UpdateCloudFrontOriginAccessIdentity',
         'cloudfront:DeleteCloudFrontOriginAccessIdentity',
-      ];
+      ]
     }
     if(actionOptions.includes(GlobalActions.Route53)){
-      actions.push('route53:ListHostedZones');
+      actions.push('route53:ListHostedZones')
     }
     if(actionOptions.includes(GlobalActions.ECR)) {
-      actions.push('ecr:GetAuthorizationToken');
+      actions.push('ecr:GetAuthorizationToken')
     }
     if(actionOptions.includes(GlobalActions.Autoscaling)) {
-      actions.push('autoscaling:Describe*');
+      actions.push('autoscaling:Describe*')
     }
     if(actionOptions.includes(GlobalActions.EC2)) {
       actions = [...actions,
@@ -50,7 +50,7 @@ export class NamespacedPolicy {
         'ec2:CreateTags',
         'ec2:RevokeSecurityGroupEgress',
         'ec2:AuthorizeSecurityGroupEgress',
-      ];
+      ]
     }
     if(actionOptions.includes(GlobalActions.ECS)) {
       actions = [...actions,
@@ -58,33 +58,33 @@ export class NamespacedPolicy {
         'ecs:CreateCluster',
         'ecs:RegisterTaskDefinition',
         'ecs:DeregisterTaskDefinition',
-      ];
+      ]
     }
     if(actionOptions.includes(GlobalActions.Cloudwatch)) {
       actions = [...actions,
         'cloudformation:ListExports',
         'logs:CreateLogGroup',
         'logs:DescribeLogGroups',
-      ];
+      ]
     }
     return new PolicyStatement({
       resources: ['*'],
       actions,
-    });
+    })
   }
 
   public static iamRole(stackName: string): PolicyStatement  {
     return new PolicyStatement({
       resources: [ Fn.sub('arn:aws:iam::${AWS::AccountId}:role/' + stackName + '*') ],
       actions: ['iam:*'],
-    });
+    })
   }
 
   public static iamInstanceProfile(stackName: string): PolicyStatement  {
     return new PolicyStatement({
       resources: [ Fn.sub('arn:aws:iam::${AWS::AccountId}:instance-profile/' + stackName + '*') ],
       actions: ['iam:CreateInstanceProfile', 'iam:AddRoleToInstanceProfile'],
-    });
+    })
   }
 
   public static lambda(stackName: string): PolicyStatement {
@@ -94,7 +94,7 @@ export class NamespacedPolicy {
         Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:' + stackName + '*'),
       ],
       actions: ['lambda:*'],
-    });
+    })
   }
 
   // This is sort of a global, but I don't want to put it in globals. Doing so
@@ -111,7 +111,7 @@ export class NamespacedPolicy {
       actions: [
         'apigateway:*',
       ],
-    });
+    })
   }
 
   public static apiDomain(domainName: string): PolicyStatement {
@@ -128,21 +128,21 @@ export class NamespacedPolicy {
         'apigateway:GET',
         'apigateway:DELETE',
       ],
-    });
+    })
   }
 
   public static s3(stackName: string): PolicyStatement {
     return new PolicyStatement({
       resources: [ Fn.sub('arn:aws:s3:::' + stackName + '*') ],
       actions: ['s3:*'],
-    });
+    })
   }
 
   public static transform(): PolicyStatement {
     return new PolicyStatement({
       resources: [ Fn.sub('arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31') ],
       actions: ['cloudformation:CreateChangeSet'],
-    });
+    })
   }
 
   public static route53RecordSet(zone: string): PolicyStatement {
@@ -156,19 +156,19 @@ export class NamespacedPolicy {
         `arn:aws:route53:::hostedzone/${zone}`,
         'arn:aws:route53:::change/*',
       ],
-    });
-  };
+    })
+  }
 
   public static ssm(stackName: string): PolicyStatement {
     return new PolicyStatement({
       actions: [
-        'ssm:*'
+        'ssm:*',
       ],
       resources: [
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/' + stackName + '/*'),
       ],
-    });
-  };
+    })
+  }
 
   public static dynamodb(stackName: string): PolicyStatement  {
     return new PolicyStatement({
@@ -185,8 +185,8 @@ export class NamespacedPolicy {
         'dynamodb:UntagResource',
         'dynamodb:ListTagsOfResource',
       ],
-    });
-  };
+    })
+  }
 
   public static ecr(): PolicyStatement  {
     return new PolicyStatement({
@@ -200,8 +200,8 @@ export class NamespacedPolicy {
         'ecr:BatchCheckLayerAvailability',
         'ecr:PutImage',
       ],
-    });
-  };
+    })
+  }
 
   public static autoscale(stackName: string): PolicyStatement  {
     return new PolicyStatement({
@@ -213,10 +213,10 @@ export class NamespacedPolicy {
         'autoscaling:CreateAutoScalingGroup',
         'autoscaling:UpdateAutoScalingGroup',
         'autoscaling:PutLifecycleHook',
-        'autoscaling:CreateLaunchConfiguration'
+        'autoscaling:CreateLaunchConfiguration',
       ],
-    });
-  };
+    })
+  }
 
   public static events(stackName: string): PolicyStatement  {
     return new PolicyStatement({
@@ -233,8 +233,8 @@ export class NamespacedPolicy {
         'events:PutTargets',
         'events:RemoveTargets',
       ],
-    });
-  };
+    })
+  }
 
   public static sns(stackName: string): PolicyStatement  {
     return new PolicyStatement({
@@ -244,10 +244,10 @@ export class NamespacedPolicy {
       actions: [
         'sns:CreateTopic',
         'sns:GetTopicAttributes',
-        'sns:Subscribe'
+        'sns:Subscribe',
       ],
-    });
-  };
+    })
+  }
 
   public static logstream(stackName: string): PolicyStatement {
     return new PolicyStatement({
@@ -255,8 +255,8 @@ export class NamespacedPolicy {
         Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'),
       ],
       actions: [
-        'logs:CreateLogStream'
+        'logs:CreateLogStream',
       ],
-    });
+    })
   }
 }

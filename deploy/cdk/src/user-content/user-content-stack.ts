@@ -1,30 +1,30 @@
-import apigateway = require('@aws-cdk/aws-apigateway');
-import dynamodb = require('@aws-cdk/aws-dynamodb');
-import lambda = require('@aws-cdk/aws-lambda');
-import ssm = require('@aws-cdk/aws-ssm');
-import cdk = require('@aws-cdk/core');
-import { CnameRecord } from '@aws-cdk/aws-route53';
-import { FoundationStack } from '../foundation';
-import fs = require('fs');
+import apigateway = require('@aws-cdk/aws-apigateway')
+import dynamodb = require('@aws-cdk/aws-dynamodb')
+import lambda = require('@aws-cdk/aws-lambda')
+import { CnameRecord } from '@aws-cdk/aws-route53'
+import ssm = require('@aws-cdk/aws-ssm')
+import cdk = require('@aws-cdk/core')
+import fs = require('fs')
+import { FoundationStack } from '../foundation'
 
 export interface UserContentStackProps extends cdk.StackProps {
-  readonly lambdaCodePath: string
-  readonly allowedOrigins: string
-  readonly tokenAudiencePath: string
-  readonly tokenIssuerPath: string
-  readonly hostnamePrefix: string
+  readonly lambdaCodePath: string;
+  readonly allowedOrigins: string;
+  readonly tokenAudiencePath: string;
+  readonly tokenIssuerPath: string;
+  readonly hostnamePrefix: string;
   readonly foundationStack: FoundationStack;
-  readonly createDns: boolean
-  readonly namespace: string
-};
+  readonly createDns: boolean;
+  readonly namespace: string;
+}
 
 export class UserContentStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: UserContentStackProps) {
-    super(scope, id, props);
+    super(scope, id, props)
 
     if(!fs.existsSync(props.lambdaCodePath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`);
-      return;
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`)
+      return
     }
 
     // Dynamo Tables
@@ -32,46 +32,46 @@ export class UserContentStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: {
         name: 'uuid',
-        type: dynamodb.AttributeType.STRING
+        type: dynamodb.AttributeType.STRING,
       },
-    });
+    })
     userDynamoTable.addGlobalSecondaryIndex({
       indexName: 'userName',
       partitionKey: {
         name: 'userName',
-        type: dynamodb.AttributeType.STRING
-      }
-    });
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
 
     const collectionDynamoTable = new dynamodb.Table(this, 'CollectionsTable', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: {
         name: 'uuid',
-        type: dynamodb.AttributeType.STRING
+        type: dynamodb.AttributeType.STRING,
       },
-    });
+    })
     collectionDynamoTable.addGlobalSecondaryIndex({
       indexName: 'userId',
       partitionKey: {
         name: 'userId',
-        type: dynamodb.AttributeType.STRING
-      }
-    });
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
 
     const itemDynamoTable = new dynamodb.Table(this, 'ItemsTable', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: {
         name: 'uuid',
-        type: dynamodb.AttributeType.STRING
+        type: dynamodb.AttributeType.STRING,
       },
-    });
+    })
     itemDynamoTable.addGlobalSecondaryIndex({
       indexName: 'collectionId',
       partitionKey: {
         name: 'collectionId',
-        type: dynamodb.AttributeType.STRING
-      }
-    });
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
 
     // Lambda Functions
     const codeAsset = lambda.Code.fromAsset(props.lambdaCodePath)
@@ -91,17 +91,17 @@ export class UserContentStack extends cdk.Stack {
         ITEM_SECONDARDY_KEY: 'collectionId',
         TOKEN_ISSUER: ssm.StringParameter.fromStringParameterName(this, 'TokenIssuer', props.tokenIssuerPath).stringValue,
         TOKEN_AUDIENCE: ssm.StringParameter.fromStringParameterName(this, 'Audience', props.tokenAudiencePath).stringValue,
-      }
-    });
+      },
+    })
 
     // Grants
-    userDynamoTable.grantReadWriteData(userContentLambda);
-    collectionDynamoTable.grantReadWriteData(userContentLambda);
-    itemDynamoTable.grantReadWriteData(userContentLambda);
+    userDynamoTable.grantReadWriteData(userContentLambda)
+    collectionDynamoTable.grantReadWriteData(userContentLambda)
+    itemDynamoTable.grantReadWriteData(userContentLambda)
 
     // API Gateway
-    const domainName = `${props.hostnamePrefix}.` + props.foundationStack.hostedZone.zoneName;
-    const domainCert = props.foundationStack.certificate;
+    const domainName = `${props.hostnamePrefix}.` + props.foundationStack.hostedZone.zoneName
+    const domainCert = props.foundationStack.certificate
     const api = new apigateway.RestApi(this, 'userContentApi', {
       restApiName: `${props.namespace}-user-content`,
       defaultCorsPreflightOptions: {
@@ -113,9 +113,9 @@ export class UserContentStack extends cdk.Stack {
         certificate: domainCert,
         domainName,
       },
-      endpointExportName: `${this.stackName}-api-url`
-    });
-    const userContentIntegration = new apigateway.LambdaIntegration(userContentLambda);
+      endpointExportName: `${this.stackName}-api-url`,
+    })
+    const userContentIntegration = new apigateway.LambdaIntegration(userContentLambda)
 
     if (props.createDns) {
       new CnameRecord(this, `${id}-Route53CnameRecord`, {
@@ -126,31 +126,31 @@ export class UserContentStack extends cdk.Stack {
       })
     }
     // user endpoints
-    const user = api.root.addResource('user');
+    const user = api.root.addResource('user')
     const userId = user.addResource('{id}')
-    userId.addMethod('POST', userContentIntegration);
-    userId.addMethod('GET', userContentIntegration);
-    userId.addMethod('PATCH', userContentIntegration);
-    userId.addMethod('DELETE', userContentIntegration);
+    userId.addMethod('POST', userContentIntegration)
+    userId.addMethod('GET', userContentIntegration)
+    userId.addMethod('PATCH', userContentIntegration)
+    userId.addMethod('DELETE', userContentIntegration)
 
-    const userByUuid = api.root.addResource('user-id');
+    const userByUuid = api.root.addResource('user-id')
     const userByUuidId = userByUuid.addResource('{id}')
-    userByUuidId.addMethod('GET', userContentIntegration);
+    userByUuidId.addMethod('GET', userContentIntegration)
 
     // collection endpoints
-    const collection = api.root.addResource('collection');
+    const collection = api.root.addResource('collection')
     const collectionId = collection.addResource('{id}')
-    collectionId.addMethod('POST', userContentIntegration);
-    collectionId.addMethod('GET', userContentIntegration);
-    collectionId.addMethod('PATCH', userContentIntegration);
-    collectionId.addMethod('DELETE', userContentIntegration);
+    collectionId.addMethod('POST', userContentIntegration)
+    collectionId.addMethod('GET', userContentIntegration)
+    collectionId.addMethod('PATCH', userContentIntegration)
+    collectionId.addMethod('DELETE', userContentIntegration)
 
     // item endpoints
-    const item = api.root.addResource('item');
+    const item = api.root.addResource('item')
     const itemId = item.addResource('{id}')
-    itemId.addMethod('POST', userContentIntegration);
-    itemId.addMethod('GET', userContentIntegration);
-    itemId.addMethod('PATCH', userContentIntegration);
-    itemId.addMethod('DELETE', userContentIntegration);
+    itemId.addMethod('POST', userContentIntegration)
+    itemId.addMethod('GET', userContentIntegration)
+    itemId.addMethod('PATCH', userContentIntegration)
+    itemId.addMethod('DELETE', userContentIntegration)
   }
 }

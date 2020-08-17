@@ -1,13 +1,13 @@
-import codepipeline = require('@aws-cdk/aws-codepipeline');
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
-import { PolicyStatement } from '@aws-cdk/aws-iam';
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
-import { Topic } from '@aws-cdk/aws-sns';
-import cdk = require('@aws-cdk/core');
-import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
-import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
-import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
+import codepipeline = require('@aws-cdk/aws-codepipeline')
+import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
+import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
+import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
+import { Topic } from '@aws-cdk/aws-sns'
+import cdk = require('@aws-cdk/core')
+import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
+import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
@@ -29,14 +29,14 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly infraSourceBranch: string;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
-};
+}
 
 export class DeploymentPipelineStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
-    super(scope, id, props);
+    super(scope, id, props)
 
-    const testStackName = `${props.namespace}-test-image`;
-    const prodStackName = `${props.namespace}-prod-image`;
+    const testStackName = `${props.namespace}-test-image`
+    const prodStackName = `${props.namespace}-prod-image`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string) => {
@@ -60,37 +60,37 @@ export class DeploymentPipelineStack extends cdk.Stack {
           "imageProcessing:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/s3_event",
           "imageProcessing:dockerfilePath": "$CODEBUILD_SRC_DIR_AppCode/",
         },
-      });
+      })
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['ssm:Get*'],
-        resources:['*']
-      }));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack));
+        resources:['*'],
+      }))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.globals(
         [
           GlobalActions.ECR, GlobalActions.EC2, GlobalActions.ECS,
           GlobalActions.Autoscaling, GlobalActions.Cloudwatch,
-        ]
-      ));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamInstanceProfile(targetStack));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ecr());
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.autoscale(targetStack));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.events(targetStack));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.sns(targetStack));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.logstream(targetStack));
+        ],
+      ))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamInstanceProfile(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ecr())
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.autoscale(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.events(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.sns(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.logstream(targetStack))
 
-      return cdkDeploy;
+      return cdkDeploy
     }
 
-    const artifactBucket = new Bucket(this, 'artifactBucket', { 
-      encryption: BucketEncryption.KMS_MANAGED, 
+    const artifactBucket = new Bucket(this, 'artifactBucket', {
+      encryption: BucketEncryption.KMS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
+    })
 
     // Source Actions
-    const appSourceArtifact = new codepipeline.Artifact('AppCode');
+    const appSourceArtifact = new codepipeline.Artifact('AppCode')
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
         branch: props.appSourceBranch,
@@ -98,8 +98,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
-    });
-    const infraSourceArtifact = new codepipeline.Artifact('InfraCode');
+    })
+    const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
         branch: props.infraSourceBranch,
@@ -107,32 +107,32 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
-    });
+    })
 
     // Deploy to Test
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`);
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`)
 
     // Approval
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
-    const approvalTopic = new Topic(this, 'ApprovalTopic');
+    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
     const approvalAction = new ManualApprovalAction({
       actionName: 'Approval',
       additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
-    });
+    })
     if(props.slackNotifyStackName !== undefined){
       const slackApproval = new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
-      });
+      })
     }
 
     // Deploy to Production
-    props.imageBucketName = this.node.tryGetContext('imageProcessing:prodImageBucketName');
-    props.rbscBucketName = this.node.tryGetContext('imageProcessing:prodRbscBucketName');
-    props.processBucketName = this.node.tryGetContext('imageProcessing:prodProcessBucketName');
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`);
+    props.imageBucketName = this.node.tryGetContext('imageProcessing:prodImageBucketName')
+    props.rbscBucketName = this.node.tryGetContext('imageProcessing:prodRbscBucketName')
+    props.processBucketName = this.node.tryGetContext('imageProcessing:prodProcessBucketName')
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
@@ -149,14 +149,14 @@ export class DeploymentPipelineStack extends cdk.Stack {
         {
           actions: [deployProd.action],
           stageName: 'Production',
-        }
+        },
       ],
-    });
+    })
     if(props.notificationReceivers){
       const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
         receivers: props.notificationReceivers,
-      });
+      })
     }
   }
 }

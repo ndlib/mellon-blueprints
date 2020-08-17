@@ -13,19 +13,23 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "format": "eslint . --ext .js,.jsx,.ts,.tsx --quiet --fix",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "devDependencies": {
     "@aws-cdk/assert": "^1.56.0",
     "@aws-cdk/cx-api": "^1.56.0",
     "@types/jest": "^26.0.9",
+    "@typescript-eslint/eslint-plugin": "^3.9.0",
+    "@typescript-eslint/parser": "^3.9.0",
     "aws-cdk": "^1.56.0",
+    "eslint": "^7.6.0",
+    "eslint-plugin-jest": "^23.20.0",
     "jest": "^26.2.2",
     "ts-jest": "^26.1.4",
     "ts-node": "^8.6.0",
-    "tslint": "^6.1.3",
-    "tslint-config-prettier": "^1.18.0",
-    "typescript": "~3.9.7"
+    "typescript": "^3.9.7"
   },
   "dependencies": {
     "@aws-cdk/aws-apigateway": "^1.56.0",
