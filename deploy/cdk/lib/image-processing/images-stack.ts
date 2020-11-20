@@ -1,5 +1,6 @@
 import * as ec2 from '@aws-cdk/aws-ec2'
 import * as ecs from '@aws-cdk/aws-ecs'
+import * as autoscale from '@aws-cdk/aws-autoscaling'
 import { Rule, Schedule } from '@aws-cdk/aws-events'
 import { EcsTask } from '@aws-cdk/aws-events-targets'
 import * as iam from '@aws-cdk/aws-iam'
@@ -23,9 +24,9 @@ export class ImagesStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: ImagesStackProps) {
     super(scope, id, props)
 
-    const rbscBucketName = props.rbscBucketName
+    const rbscBucketName = 'rbsc-test-files'
     const rbscBucket = s3.Bucket.fromBucketName(this, 'RbscBucket', rbscBucketName)
-    const processBucket = props.manifestPipelineStack.processBucket
+    const processBucket = s3.Bucket.fromBucketName(this, 'ProcessBucket', 'devred-sample-image')
     const imageBucket = props.foundationStack.publicBucket
 
     /* get rbsc bucket and attach object listener */
@@ -64,9 +65,7 @@ export class ImagesStack extends cdk.Stack {
     const cluster = props.foundationStack.cluster as ecs.Cluster
     cluster.addCapacity('Ec2Group', {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      minCapacity: 1,
-      maxCapacity: 1,
-      desiredCapacity: 1,
+      blockDevices: [{ deviceName: '/dev/xvda', volume: autoscale.BlockDeviceVolume.ebs(10) }],
     })
 
     const taskRole = new iam.Role(this, 'MarbleImageTaskRole', {
@@ -130,7 +129,7 @@ export class ImagesStack extends cdk.Stack {
 
     /* setup ECS to run via cron to process images */
     new Rule(this, 'ScheduleRule', {
-      schedule: Schedule.cron({ minute: '0,15,30,45' }),
+      schedule: Schedule.cron({ minute: '0,30' }),
       targets: [ecsTaskTarget],
     })
   }
