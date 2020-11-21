@@ -67,7 +67,7 @@ export class ImagesStack extends cdk.Stack {
     cluster.addCapacity('Ec2Group', {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       blockDevices: [{
-        deviceName: '/dev/xvda1',
+        deviceName: '/dev/xvda',
         volume: autoscale.BlockDeviceVolume.ebs(50, ebsProps),
       }],
       minCapacity: 1,
