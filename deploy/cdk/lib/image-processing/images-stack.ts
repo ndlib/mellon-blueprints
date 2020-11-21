@@ -68,8 +68,11 @@ export class ImagesStack extends cdk.Stack {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       blockDevices: [{
         deviceName: '/dev/xvda1',
-        volume: autoscale.BlockDeviceVolume.ebs(10, ebsProps),
+        volume: autoscale.BlockDeviceVolume.ebs(50, ebsProps),
       }],
+      minCapacity: 1,
+      maxCapacity: 1,
+      desiredCapacity: 1,
     })
 
     const taskRole = new iam.Role(this, 'MarbleImageTaskRole', {
