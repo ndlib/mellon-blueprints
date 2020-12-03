@@ -2,6 +2,7 @@ import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } fro
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { Bucket } from '@aws-cdk/aws-s3'
 import { Construct, Fn } from '@aws-cdk/core'
 
 export interface ICDKPipelineDeployProps extends PipelineProjectProps {
@@ -50,6 +51,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputDirectory?: string;
   readonly outputFiles?: string[];
   readonly outputArtifact?: Artifact;
+  readonly cachePaths?: string[];
 
   /**
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`
@@ -81,6 +83,9 @@ export class CDKPipelineDeploy extends Construct {
       extraInputs.push(props.appSourceArtifact)
       appSourceDir = `$CODEBUILD_SRC_DIR_${props.appSourceArtifact.artifactName}`
     }
+    const cdkArgs = `${props.targetStack} --require-approval never --exclusively \
+                    -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`
+    const cdkDirectory = `$CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`
     this.project = new PipelineProject(scope, `${id}Project`, {
       environment: {
         buildImage: LinuxBuildImage.STANDARD_4_0,
@@ -91,10 +96,14 @@ export class CDKPipelineDeploy extends Construct {
           'base-directory': props.outputDirectory,
           files: props.outputFiles || [],
         },
+        cache: {
+          paths: props.cachePaths || [],
+        },
         phases: {
           install: {
             commands: [
-              `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
+              `cd ${cdkDirectory}`,
+              `find ${appSourceDir}`,
               'yarn install',
             ],
             'runtime-versions': {
@@ -110,10 +119,12 @@ export class CDKPipelineDeploy extends Construct {
           },
           build: {
             commands: [
-              `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
-              `npm run cdk deploy -- ${props.targetStack} \
-                --require-approval never --exclusively \
-                -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`,
+              `cd ${cdkDirectory}`,
+              // Diff will exit with 1 when there is a diff, so invert it's status code.
+              // Read this as "fail the build (exit 1) when the stacks have no diff"
+              `! npm run cdk diff -- --fail ${cdkArgs}`,
+              'echo Diff detected. Continuing with deploy.',
+              `npm run cdk deploy -- ${cdkArgs}`,
             ],
           },
           post_build: {

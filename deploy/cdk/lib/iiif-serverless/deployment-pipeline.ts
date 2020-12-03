@@ -1,4 +1,4 @@
-import { BuildEnvironmentVariableType, BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
+import { BuildEnvironmentVariableType, BuildSpec, PipelineProject, Cache } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { PolicyStatement } from '@aws-cdk/aws-iam'
@@ -104,6 +104,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
           "iiifImageService:hostnamePrefix": hostnamePrefix,
           "createDns": props.createDns ? "true" : "false",
         },
+        cache: Cache.bucket(props.pipelineFoundationStack.artifactBucket, { prefix: `${id}-cache` }),
+        cachePaths: ['$CODEBUILD_SRC_DIR_AppCode/dependencies/nodejs/node_modules'],
       })
 
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.transform())
@@ -253,13 +255,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, copyImagesTestAction, smokeTestsAction, approvalAction],
+          actions: [deployTest.action/*, copyImagesTestAction, smokeTestsAction, approvalAction*/],
           stageName: 'Test',
         },
-        {
-          actions: [deployProd.action, copyImagesProdAction, smokeTestsProdAction],
-          stageName: 'Production',
-        },
+        // {
+        //   actions: [deployProd.action, copyImagesProdAction, smokeTestsProdAction],
+        //   stageName: 'Production',
+        // },
       ],
     })
 
